@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤔本地英汉词典🤔</title>
+    <!-- 引入 Bootstrap 样式 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- 引入 Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .main-container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+        
+        .container {
+            flex: 1;
+            max-width: 750px;
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        
+        .wordbook-container {
+            width: 350px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            height: fit-content;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        h1 {
+            text-align: left;
+            margin-bottom: 30px;
+            color: #0056b3;
+            font-weight: 700;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 15px;
+        }
+        
+        .search-form {
+            margin-bottom: 30px;
+        }
+        
+        .input-group {
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .form-control:focus {
+            box-shadow: none;
+            border-color: #0056b3;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            border: none;
+            padding: 10px 20px;
+            font-weight: 600;
+        }
+        
+        .result-card {
+            background-color: #f8f9fa;
+            border-left: 5px solid #007bff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .result-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+        
+        .word-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #0056b3;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+        
+        .phonetic {
+            font-family: monospace;
+            background-color: #e9ecef;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            margin-left: 10px;
+            color: #495057;
+        }
+        
+        .definition-item {
+            margin-bottom: 15px;
+            padding-left: 15px;
+            border-left: 3px solid #dee2e6;
+            transition: border-left-color 0.3s ease;
+        }
+        
+        .definition-item:hover {
+            border-left-color: #007bff;
+        }
+        
+        .definition-label {
+            font-weight: bold;
+            color: #343a40;
+            margin-right: 8px;
+            display: inline-block;
+            min-width: 70px;
+        }
+        
+        .badge-section {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #dee2e6;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .badge {
+            padding: 8px 12px;
+            font-weight: 500;
+            border-radius: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .not-found {
+            text-align: left;
+            padding: 25px;
+            color: #dc3545;
+            background-color: #f8d7da;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            border-left: 5px solid #dc3545;
+        }
+        
+        .favorite-btn {
+            background-color: #ffc107;
+            color: #212529;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            margin-left: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .favorite-btn:hover {
+            background-color: #ffca2c;
+            transform: scale(1.05);
+        }
+        
+        .wordbook-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0056b3;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .wordbook-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        
+        .wordbook-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+        
+        .wordbook-item:hover {
+            background-color: #e9ecef;
+        }
+        
+        .wordbook-word {
+            color: #0056b3;
+            font-weight: 500;
+            cursor: pointer;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 80%;
+        }
+        
+        .wordbook-word:hover {
+            text-decoration: underline;
+        }
+        
+        .remove-word-btn {
+            color: #dc3545;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0 5px;
+        }
+        
+        .remove-word-btn:hover {
+            color: #bd2130;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="container">
+        <h1>🤔本地英汉词典🤔</h1>
+        
+        <form method="get" class="search-form">
+            <div class="input-group">
+                <input type="text" class="form-control" name="word" placeholder="请输入英文单词..." value="{{ word }}" autofocus>
+                <button class="btn btn-primary" type="submit">查词</button>
+            </div>
+        </form>
+        
+        <div class="d-flex justify-content-center mb-4">
+            <a href="/random" class="btn btn-success" style="padding: 8px 20px; border-radius: 20px; box-shadow: 0 3px 10px rgba(0,0,0,0.1);">
+                <i class="bi bi-shuffle"></i> 随机单词
+            </a>
+        </div>
+
+        {% if result %}
+            <div class="result-card">
+                <h2 class="word-title">{{ result['word'] }}</h2>
+                <button class="favorite-btn" onclick="addToWordbook('{{ result['word'] }}')">收藏</button>
+                {% if result['phonetic'] %}<span class="phonetic">/ {{ result['phonetic'] }} /</span>{% endif %}
+                
+                <div class="definition-section mt-3">
+                    {% if result['pos'] %}
+                    <div class="definition-item">
+                        <span class="definition-label">词性:</span>
+                        <span class="definition-text">{{ result['pos'] }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if result['definition'] %}
+                    <div class="definition-item">
+                        <span class="definition-label">英文释义:</span>
+                        <span class="definition-text">{{ result['definition'] }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if result['translation'] %}
+                    <div class="definition-item">
+                        <span class="definition-label">中文释义:</span>
+                        <span class="definition-text">{{ result['translation'] }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if result['exchange'] %}
+                    <div class="definition-item">
+                        <span class="definition-label">派生:</span>
+                        <span class="definition-text">{{ result['exchange'] }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="badge-section">
+                    {% if result['collins'] %}
+                    <span class="badge bg-info">
+                        柯林斯星级: {{ result['collins'] }}
+                    </span>
+                    {% endif %}
+                    
+                    {% if result['oxford'] %}
+                    <span class="badge bg-primary">
+                        牛津核心词汇
+                    </span>
+                    {% endif %}
+                    
+                    {% if result['bnc'] %}
+                    <span class="badge bg-secondary">
+                        BNC词频: {{ result['bnc'] }}
+                    </span>
+                    {% endif %}
+                    
+                    {% if result['frq'] %}
+                    <span class="badge bg-secondary">
+                        当代词频: {{ result['frq'] }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        {% elif word %}
+            <div class="not-found">
+                未找到单词：{{ word }}
+            </div>
+        {% endif %}
+    </div>
+        
+        <div class="wordbook-container">
+            <h2 class="wordbook-title">单词本</h2>
+            <div class="d-flex justify-content-end mb-3">
+                <button id="export-btn" class="btn btn-info btn-sm" onclick="exportWordbook()">
+                    <i class="bi bi-download"></i> 导出单词本
+                </button>
+            </div>
+            <ul id="wordbook-list" class="wordbook-list">
+                <!-- 单词本内容将通过JavaScript动态生成 -->
+            </ul>
+        </div>
+    </div>
+
+    <!-- 引入 Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 初始化单词本
+        let wordbook = JSON.parse(localStorage.getItem('wordbook')) || [];
+        
+        // 页面加载时渲染单词本
+        document.addEventListener('DOMContentLoaded', function() {
+            renderWordbook();
+        });
+        
+        // 添加单词到单词本
+        function addToWordbook(word) {
+            // 即使单词已存在也可以重复添加
+            wordbook.push(word);
+            localStorage.setItem('wordbook', JSON.stringify(wordbook));
+            renderWordbook();
+            // 移除弹窗提示
+        }
+        
+        // 从单词本中移除单词
+        function removeFromWordbook(index) {
+            wordbook.splice(index, 1);
+            localStorage.setItem('wordbook', JSON.stringify(wordbook));
+            renderWordbook();
+        }
+        
+        // 渲染单词本
+        function renderWordbook() {
+            const wordbookList = document.getElementById('wordbook-list');
+            wordbookList.innerHTML = '';
+            
+            if (wordbook.length === 0) {
+                wordbookList.innerHTML = '<li class="wordbook-item">单词本为空</li>';
+                return;
+            }
+            
+            wordbook.forEach((word, index) => {
+                const li = document.createElement('li');
+                li.className = 'wordbook-item';
+                
+                const wordSpan = document.createElement('span');
+                wordSpan.className = 'wordbook-word';
+                wordSpan.textContent = word;
+                wordSpan.onclick = function() {
+                    window.location.href = '?word=' + encodeURIComponent(word);
+                };
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-word-btn';
+                removeBtn.innerHTML = '&times;';
+                removeBtn.onclick = function() {
+                    removeFromWordbook(index);
+                };
+                
+                li.appendChild(wordSpan);
+                li.appendChild(removeBtn);
+                wordbookList.appendChild(li);
+            });
+        }
+        
+        // 导出单词本
+        async function exportWordbook() {
+            if (wordbook.length === 0) {
+                alert('单词本为空，无法导出！');
+                return;
+            }
+            
+            // 创建一个表格来存储单词和释义
+            let tableContent = '<table border="1" style="border-collapse: collapse; width: 100%;">';
+            tableContent += '<thead style="background-color: #f0f0f0;"><tr><th style="padding: 8px; text-align: left;">单词</th><th style="padding: 8px; text-align: left;">中文释义</th></tr></thead><tbody>';
+            
+            // 为每个单词查询释义
+            for (const word of wordbook) {
+                try {
+                    // 查询单词释义
+                    const response = await fetch(`/?word=${encodeURIComponent(word)}`);
+                    const html = await response.text();
+                    
+                    // 从返回的HTML中提取中文释义
+                    let translation = '无释义';
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    // 查找中文释义元素
+                    let translationElement = null;
+                    // 查找所有定义项
+                    const definitionItems = doc.querySelectorAll('.definition-item');
+                    // 遍历找到包含"中文释义"的项
+                    for (const item of definitionItems) {
+                        const label = item.querySelector('.definition-label');
+                        if (label && label.textContent.includes('中文释义')) {
+                            translationElement = item.querySelector('.definition-text');
+                            break;
+                        }
+                    }
+                    if (translationElement) {
+                        translation = translationElement.textContent.trim();
+                    }
+                    
+                    // 添加到表格中
+                    tableContent += `<tr><td style="padding: 8px; border: 1px solid #ddd;">${word}</td><td style="padding: 8px; border: 1px solid #ddd;">${translation}</td></tr>`;
+                } catch (error) {
+                    console.error(`获取单词 ${word} 的释义时出错:`, error);
+                    tableContent += `<tr><td style="padding: 8px; border: 1px solid #ddd;">${word}</td><td style="padding: 8px; border: 1px solid #ddd;">获取释义失败</td></tr>`;
+                }
+            }
+            
+            tableContent += '</tbody></table>';
+            
+            // 创建完整的HTML文档
+            const htmlContent = `
+            <!DOCTYPE html>
+            <html lang="zh-CN">
+            <head>
+                <meta charset="UTF-8">
+                <title>${wordbook[0]}的单词本</title>
+                <style>
+                    body { 
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                        margin: 0; 
+                        padding: 0; 
+                        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+                        color: #333;
+                    }
+                    .container {
+                        max-width: 900px;
+                        margin: 30px auto;
+                        padding: 30px;
+                        background-color: white;
+                        border-radius: 12px;
+                        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+                    }
+                    h1 { 
+                        color: #0056b3; 
+                        border-bottom: 2px solid #e9ecef;
+                        padding-bottom: 15px;
+                        margin-bottom: 20px;
+                        font-weight: 700;
+                    }
+                    .info-section {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-bottom: 20px;
+                        color: #6c757d;
+                        font-size: 14px;
+                    }
+                    table { 
+                        border-collapse: collapse; 
+                        width: 100%; 
+                        margin-top: 20px; 
+                        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+                        border-radius: 8px;
+                        overflow: hidden;
+                    }
+                    thead {
+                        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+                        color: white;
+                    }
+                    th { 
+                        text-align: left; 
+                        padding: 15px; 
+                        font-weight: 600;
+                    }
+                    td { 
+                        padding: 12px 15px; 
+                        border-bottom: 1px solid #e9ecef; 
+                    }
+                    tr:nth-child(even) { 
+                        background-color: #f8f9fa; 
+                    }
+                    tr:hover {
+                        background-color: #e9ecef;
+                    }
+                    .word-cell {
+                        font-weight: 600;
+                        color: #0056b3;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 30px;
+                        color: #6c757d;
+                        font-size: 12px;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>${wordbook[0]}的单词本</h1>
+                    <div class="info-section">
+                        <p>导出时间: ${new Date().toLocaleString()}</p>
+                        <p>共 ${wordbook.length} 个单词</p>
+                    </div>
+                    ${tableContent.replace(/<td style="padding: 8px; border: 1px solid #ddd;">([^<]+)<\/td>/g, '<td style="padding: 8px; border: 1px solid #ddd;" class="word-cell">$1</td>').replace(/<tbody>/g, '<tbody>').replace(/<\/tbody>/g, '</tbody><tfoot><tr><td colspan="2" class="footer">由本地英汉词典生成</td></tr></tfoot>')}
+                </div>
+            </body>
+            </html>
+            `;
+            
+            // 创建Blob对象
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            
+            // 创建下载链接
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            // 格式化日期为YYYYMMDD格式
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const dateStr = `${year}${month}${day}`;
+            // 使用第一个单词作为文件名前缀
+            a.download = `${wordbook[0]}的单词本_${dateStr}.html`;
+            
+            // 触发下载
+            document.body.appendChild(a);
+            a.click();
+            
+            // 清理
+            document.body.removeChild(a);
+            URL.revokeObjectURL(a.href);
+        }
+    </script>
+</body>
+</html>
