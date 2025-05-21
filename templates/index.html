@@ -226,6 +226,31 @@
         .remove-word-btn:hover {
             color: #bd2130;
         }
+        
+        .btn-group {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .btn-group .btn {
+            flex: 1;
+            margin: 0 2px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-group .btn i {
+            margin-right: 4px;
+        }
+        
+        .btn-group .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
@@ -317,9 +342,29 @@
         
         <div class="wordbook-container">
             <h2 class="wordbook-title">单词本</h2>
-            <div class="d-flex justify-content-end mb-3">
+            <div class="d-flex justify-content-between mb-3">
+                <div>
+                    <button id="save-btn" class="btn btn-primary btn-sm" onclick="saveWordbook()">
+                        <i class="bi bi-save"></i> 保存
+                    </button>
+                    <label for="import-file" class="btn btn-success btn-sm ms-2">
+                        <i class="bi bi-upload"></i> 导入
+                    </label>
+                    <input type="file" id="import-file" style="display: none;" accept=".json" onchange="importWordbook(this)">
+                </div>
                 <button id="export-btn" class="btn btn-info btn-sm" onclick="exportWordbook()">
                     <i class="bi bi-download"></i> 导出单词本
+                </button>
+            </div>
+            <div class="btn-group mb-3" role="group" aria-label="排序选项">
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="sortWordbook('asc')">
+                    <i class="bi bi-sort-alpha-down"></i> 字母顺序
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="sortWordbook('desc')">
+                    <i class="bi bi-sort-alpha-down-alt"></i> 逆序
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="sortWordbook('random')">
+                    <i class="bi bi-shuffle"></i> 乱序
                 </button>
             </div>
             <ul id="wordbook-list" class="wordbook-list">
@@ -351,6 +396,38 @@
         // 从单词本中移除单词
         function removeFromWordbook(index) {
             wordbook.splice(index, 1);
+            localStorage.setItem('wordbook', JSON.stringify(wordbook));
+            renderWordbook();
+        }
+        
+        // 排序单词本
+        function sortWordbook(type) {
+            if (wordbook.length <= 1) {
+                return; // 单词数量为0或1时不需要排序
+            }
+            
+            // 创建一个副本以避免直接修改原数组
+            let sortedWordbook = [...wordbook];
+            
+            switch(type) {
+                case 'asc': // 按字母顺序排序
+                    sortedWordbook.sort((a, b) => a.localeCompare(b, 'en'));
+                    break;
+                case 'desc': // 按字母逆序排序
+                    sortedWordbook.sort((a, b) => b.localeCompare(a, 'en'));
+                    break;
+                case 'random': // 随机排序（洗牌算法）
+                    for (let i = sortedWordbook.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [sortedWordbook[i], sortedWordbook[j]] = [sortedWordbook[j], sortedWordbook[i]];
+                    }
+                    break;
+                default:
+                    return; // 如果类型不匹配，不执行任何操作
+            }
+            
+            // 更新单词本并保存到本地存储
+            wordbook = sortedWordbook;
             localStorage.setItem('wordbook', JSON.stringify(wordbook));
             renderWordbook();
         }
@@ -387,6 +464,97 @@
                 li.appendChild(removeBtn);
                 wordbookList.appendChild(li);
             });
+        }
+        
+        // 保存单词本到本地
+        function saveWordbook() {
+            if (wordbook.length === 0) {
+                alert('单词本为空，无法保存！');
+                return;
+            }
+            
+            // 创建要保存的数据对象
+            const data = {
+                words: wordbook,
+                saveDate: new Date().toISOString(),
+                count: wordbook.length
+            };
+            
+            // 转换为JSON字符串
+            const jsonStr = JSON.stringify(data, null, 2);
+            
+            // 创建Blob对象
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            
+            // 创建下载链接
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            // 格式化日期为YYYYMMDD格式
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const dateStr = `${year}${month}${day}`;
+            // 使用最后一个单词作为文件名前缀
+            a.download = `${wordbook[wordbook.length-1] || '我的'}单词本_${dateStr}.json`;
+            
+            // 触发下载
+            document.body.appendChild(a);
+            a.click();
+            
+            // 清理
+            document.body.removeChild(a);
+            URL.revokeObjectURL(a.href);
+            
+            alert('单词本保存成功！');
+        }
+        
+        // 从本地导入单词本
+        function importWordbook(fileInput) {
+            const file = fileInput.files[0];
+            if (!file) {
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    if (data && Array.isArray(data.words)) {
+                        // 确认是否要替换或合并单词本
+                        const action = confirm('是否要替换当前单词本？\n\n点击"确定"替换当前单词本\n点击"取消"合并到当前单词本');
+                        
+                        if (action) {
+                            // 替换当前单词本
+                            wordbook = [...data.words];
+                        } else {
+                            // 合并到当前单词本
+                            wordbook = [...wordbook, ...data.words];
+                        }
+                        
+                        // 保存到localStorage并重新渲染
+                        localStorage.setItem('wordbook', JSON.stringify(wordbook));
+                        renderWordbook();
+                        alert(`成功导入 ${data.words.length} 个单词！`);
+                    } else {
+                        alert('导入的文件格式不正确！');
+                    }
+                } catch (error) {
+                    console.error('导入单词本时出错:', error);
+                    alert('导入单词本时出错!');
+                }
+                
+                // 清空文件输入框，以便可以重复导入同一个文件
+                fileInput.value = '';
+            };
+            
+            reader.onerror = function() {
+                alert('读取文件时出错！');
+                fileInput.value = '';
+            };
+            
+            reader.readAsText(file);
         }
         
         // 导出单词本
@@ -444,7 +612,7 @@
             <html lang="zh-CN">
             <head>
                 <meta charset="UTF-8">
-                <title>${wordbook[0]}的单词本</title>
+                <title>${wordbook[wordbook.length-1]}的单词本</title>
                 <style>
                     body { 
                         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -516,7 +684,7 @@
             </head>
             <body>
                 <div class="container">
-                    <h1>${wordbook[0]}的单词本</h1>
+                    <h1>${wordbook[wordbook.length-1]}的单词本</h1>
                     <div class="info-section">
                         <p>导出时间: ${new Date().toLocaleString()}</p>
                         <p>共 ${wordbook.length} 个单词</p>
@@ -539,8 +707,8 @@
             const month = String(now.getMonth() + 1).padStart(2, '0');
             const day = String(now.getDate()).padStart(2, '0');
             const dateStr = `${year}${month}${day}`;
-            // 使用第一个单词作为文件名前缀
-            a.download = `${wordbook[0]}的单词本_${dateStr}.html`;
+            // 使用最后一个单词作为文件名前缀
+            a.download = `${wordbook[wordbook.length-1]}的单词本_${dateStr}.html`;
             
             // 触发下载
             document.body.appendChild(a);
